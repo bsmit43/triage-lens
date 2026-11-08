@@ -79,7 +79,7 @@ test('applyTriage validates priority and writes fields, labels and a comment', a
   const h = makeHandlers(c);
   const bad = await h.applyTriage({ issueKey: 'IT-9', priority: 'Super urgent' });
   assert.ok(bad.error);
-  assert.equal(c.calls.length, 0);
+  assert.ok(!c.calls.some((x) => x.method !== 'GET'), 'a rejected priority must not write anything');
 
   const ok = await h.applyTriage({ issueKey: 'IT-9', priority: 'High', assigneeAccountId: 'acc-bob', category: 'Network', note: 'VPN outage' });
   assert.equal(ok.commentAdded, true);
@@ -102,6 +102,36 @@ test('findRunbooks needs a query', async () => {
   assert.ok((await h.findRunbooks({ query: '' })).error);
   const r = await h.findRunbooks({ query: 'vpn disconnects on wifi' });
   assert.equal(r.runbooks[0].title, 'VPN runbook');
+});
+
+function clientWithPriorities(names) {
+  const c = fakeClient();
+  const base = c.jira;
+  c.jira = async (method, op, args) => {
+    if (op === 'priorities') {
+      c.calls.push({ method, op, args });
+      return names.map((name, i) => ({ id: String(i), name }));
+    }
+    return base(method, op, args);
+  };
+  return c;
+}
+
+test('suggestTriage reports priority in the site scheme (Critical/Medium/Low)', async () => {
+  const c = clientWithPriorities(['Critical', 'Medium', 'Low']);
+  const r = await makeHandlers(c).suggestTriage({ issueKey: 'IT-9' });
+  assert.equal(r.urgencyLevel, 'Highest');
+  assert.equal(r.suggestedPriority, 'Critical');
+});
+
+test('applyTriage maps level names onto the site scheme and rejects unknown names', async () => {
+  const c = clientWithPriorities(['Critical', 'Medium', 'Low']);
+  const h = makeHandlers(c);
+  await h.applyTriage({ issueKey: 'IT-9', priority: 'High' });
+  const put = c.calls.find((x) => x.method === 'PUT');
+  assert.equal(put.args.body.fields.priority.name, 'Critical');
+  const bad = await h.applyTriage({ issueKey: 'IT-9', priority: 'Whenever' });
+  assert.match(bad.error, /Critical, Medium, Low/);
 });
 
 test('findSimilarTickets clamps maxResults', async () => {

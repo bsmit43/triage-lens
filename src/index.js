@@ -27,6 +27,8 @@ const client = {
         return readJson(await user.requestJira(route`/rest/api/3/issue/${args.key}`, {
           method: 'PUT', headers: JSON_HEADERS, body: JSON.stringify(args.body),
         }));
+      case 'priorities':
+        return readJson(await user.requestJira(route`/rest/api/3/priority`, { headers: JSON_HEADERS }));
       case 'search':
         return readJson(await user.requestJira(route`/rest/api/3/search/jql`, {
           method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(args),

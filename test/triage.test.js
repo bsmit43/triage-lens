@@ -8,6 +8,7 @@ import {
   buildSimilarJql,
   buildRunbookCql,
   normalizeIssueKey,
+  mapToSitePriority,
   adfToText,
   textToAdf,
   buildTriageNote,
@@ -84,6 +85,22 @@ test('normalizeIssueKey validates and upper-cases', () => {
   assert.equal(normalizeIssueKey('IT42'), null);
   assert.equal(normalizeIssueKey('IT-42; DROP'), null);
   assert.equal(normalizeIssueKey(42), null);
+});
+
+test('mapToSitePriority handles different schemes', () => {
+  const std = ['Highest', 'High', 'Medium', 'Low', 'Lowest'];
+  assert.equal(mapToSitePriority('High', std), 'High');
+  const jsm = ['Critical', 'Medium', 'Low'];
+  assert.equal(mapToSitePriority('Highest', jsm), 'Critical');
+  assert.equal(mapToSitePriority('High', jsm), 'Critical');
+  assert.equal(mapToSitePriority('Lowest', jsm), 'Low');
+  assert.equal(mapToSitePriority('critical', jsm), 'Critical');
+  const p = ['P1', 'P2', 'P3', 'P4'];
+  assert.equal(mapToSitePriority('Medium', p), 'P3');
+  assert.equal(mapToSitePriority('Lowest', p), 'P4');
+  assert.equal(mapToSitePriority('nonsense', jsm), null);
+  assert.equal(mapToSitePriority('High', []), 'High');
+  assert.equal(mapToSitePriority('', jsm), null);
 });
 
 test('ADF round trip', () => {

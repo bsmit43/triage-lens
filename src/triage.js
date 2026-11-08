@@ -2,6 +2,42 @@
 
 export const PRIORITIES = ['Highest', 'High', 'Medium', 'Low', 'Lowest'];
 
+// Sites use different priority schemes. Map our 5 levels onto whatever names the site has.
+const PRIORITY_ALIASES = {
+  Highest: ['highest', 'critical', 'blocker', 'urgent', 'p1', 'emergency'],
+  High: ['high', 'major', 'important', 'p2'],
+  Medium: ['medium', 'normal', 'moderate', 'p3'],
+  Low: ['low', 'minor', 'p4'],
+  Lowest: ['lowest', 'trivial', 'p5'],
+};
+
+/**
+ * Map one of our levels (or a site priority name) to a priority name that exists on the site.
+ * Falls back to the nearest available level. Returns null if nothing matches.
+ */
+export function mapToSitePriority(value, siteNames) {
+  if (typeof value !== 'string' || !value.trim()) return null;
+  const v = value.trim().toLowerCase();
+  const names = (siteNames || []).filter((n) => typeof n === 'string');
+  if (names.length === 0) return PRIORITIES.find((p) => p.toLowerCase() === v) || null;
+  const exact = names.find((n) => n.toLowerCase() === v);
+  if (exact) return exact;
+  const level = PRIORITIES.find((p) => p.toLowerCase() === v || PRIORITY_ALIASES[p].includes(v));
+  if (!level) return null;
+  const idx = PRIORITIES.indexOf(level);
+  const byLevel = (lvl) => names.find((n) => PRIORITY_ALIASES[lvl].includes(n.toLowerCase()));
+  // Same level first, then nearest neighbours (prefer the more urgent one on ties).
+  for (let d = 0; d < PRIORITIES.length; d++) {
+    for (const j of [idx - d, idx + d]) {
+      if (j >= 0 && j < PRIORITIES.length) {
+        const hit = byLevel(PRIORITIES[j]);
+        if (hit) return hit;
+      }
+    }
+  }
+  return null;
+}
+
 const STOPWORDS = new Set(
   (
     'a an and are as at be been but by can cannot could did do does for from had has have ' +

@@ -63,7 +63,8 @@ modules:
           title: Priority
           type: string
           required: true
-          description: One of Highest, High, Medium, Low, Lowest.
+          description: The priority to set. Use the suggestedPriority name returned by
+            suggest-triage, or one of Highest, High, Medium, Low, Lowest.
         assigneeAccountId:
           title: Assignee account ID
           type: string

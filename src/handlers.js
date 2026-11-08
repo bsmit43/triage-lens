@@ -9,6 +9,7 @@ import {
   buildSimilarJql,
   buildRunbookCql,
   normalizeIssueKey,
+  mapToSitePriority,
   adfToText,
   textToAdf,
   buildTriageNote,
@@ -32,6 +33,19 @@ function badKey() {
  * Paths are built by the caller with encodeURIComponent; index.js uses @forge/api `route` instead.
  */
 export function makeHandlers(client) {
+  let sitePriorities = null;
+  async function getSitePriorities() {
+    if (sitePriorities) return sitePriorities;
+    try {
+      const res = await client.jira('GET', 'priorities', {});
+      const list = Array.isArray(res) ? res : res.values || [];
+      sitePriorities = list.map((p) => p.name).filter(Boolean);
+    } catch {
+      sitePriorities = [];
+    }
+    return sitePriorities;
+  }
+
   async function loadIssue(key) {
     const issue = await client.jira('GET', 'issue', {
       key,
@@ -116,7 +130,8 @@ export function makeHandlers(client) {
       if (!key) return badKey();
       const issue = await loadIssue(key);
       const { keywords, similar } = await searchSimilar(issue, 10);
-      const { priority, reasons } = scorePriority(issue);
+      const { priority: level, reasons } = scorePriority(issue);
+      const priority = mapToSitePriority(level, await getSitePriorities()) || level;
       const category = classify(issue);
       const assignee = suggestAssignee(similar);
       const runbooks = await searchRunbooks(keywords, 3);
@@ -126,6 +141,7 @@ export function makeHandlers(client) {
         currentPriority: issue.priority,
         currentAssignee: issue.assignee?.displayName || null,
         suggestedPriority: priority,
+        urgencyLevel: level,
         reasons,
         suggestedCategory: category,
         suggestedAssignee: assignee,
@@ -138,9 +154,11 @@ export function makeHandlers(client) {
     async applyTriage(payload) {
       const key = resolveIssueKey(payload);
       if (!key) return badKey();
-      const priority = typeof payload?.priority === 'string' ? payload.priority.trim() : '';
-      if (!PRIORITIES.includes(priority)) {
-        return { error: `Priority must be one of: ${PRIORITIES.join(', ')}.` };
+      const names = await getSitePriorities();
+      const priority = mapToSitePriority(payload?.priority, names);
+      if (!priority) {
+        const allowed = names.length ? names : PRIORITIES;
+        return { error: `Priority must be one of: ${allowed.join(', ')}.` };
       }
       const accountId = typeof payload?.assigneeAccountId === 'string' && /^[\w:-]{1,128}$/.test(payload.assigneeAccountId)
         ? payload.assigneeAccountId
