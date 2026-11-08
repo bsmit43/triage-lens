@@ -43,3 +43,18 @@ Rovo actions and `rovo:mcp` let one set of tools serve both the in-product agent
 
 ## Built with
 forge, rovo, mcp, jira-service-management, confluence, javascript, node.js
+
+## Links (paste into the Devpost form)
+- **Code:** https://github.com/bsmit43/triage-lens
+- **Installation link:** _paste from Developer Console → Distribution → Installation link (select Jira and Confluence)_
+- **Demo video:** _paste YouTube link (Public)_
+
+## Testing instructions for judges
+1. Open the installation link and install Triage Lens on your Jira site, then on Confluence on the same site if you want runbook search. Approve the requested scopes.
+2. Open any Jira Service Management ticket. Ideally use a project with some resolved tickets, so owner suggestions and similar tickets have history to draw on.
+3. Open **Rovo** (Ask Rovo, top right), click the agent picker, search for **Triage Lens**, and select it.
+4. Type **"Triage this ticket"**, or **"Triage <KEY>"**. You'll get a priority with reasons, a category, a suggested owner, similar resolved tickets and Confluence runbooks.
+5. Reply **"yes, apply it"**. Rovo shows a **Please review** card. Click **Confirm**, and the ticket's priority, assignee and labels update and an internal note is added.
+6. **MCP (bonus):** in Atlassian Administration → Apps → Sites → your site → Connected apps → triage-lens, click **Enable tools** under "Expose tools to MCP-compatible apps". Then connect any MCP client to `https://mcp.atlassian.com/forge/e5a318a1-4afc-4307-9179-bd11f7f6ce83` and call `suggest-triage`.
+
+Triage Lens works with any priority scheme (Highest/High/… or Critical/Medium/Low or P1–P4). It maps its suggestion onto the site's own priorities.
