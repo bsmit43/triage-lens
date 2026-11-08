@@ -2,7 +2,9 @@ modules:
   rovo:agent:
     - key: triage-lens-agent
       name: Triage Lens
-      description: Triages IT service desk tickets using similar resolved tickets and Confluence runbooks, then applies the priority, owner and category you approve.
+      description: Triages IT service desk tickets using similar resolved tickets and
+        Confluence runbooks, then applies the priority, owner and category you
+        approve.
       prompt: resource:agent-prompt;prompt.txt
       conversationStarters:
         - Triage this ticket
@@ -40,7 +42,8 @@ modules:
           title: Issue key
           type: string
           required: false
-          description: The Jira issue key, for example IT-123. Optional if the agent is opened on an issue.
+          description: The Jira issue key, for example IT-123. Optional if the agent is
+            opened on an issue.
 
     - key: apply-triage
       name: Apply triage
@@ -88,7 +91,8 @@ modules:
           title: Issue key
           type: string
           required: false
-          description: The Jira issue key, for example IT-123. Optional if the agent is opened on an issue.
+          description: The Jira issue key, for example IT-123. Optional if the agent is
+            opened on an issue.
 
     - key: find-similar-tickets
       name: Find similar tickets
@@ -120,7 +124,8 @@ modules:
           title: Query
           type: string
           required: true
-          description: A short description of the problem, for example "vpn disconnects on wifi".
+          description: A short description of the problem, for example "vpn disconnects on
+            wifi".
 
   function:
     - key: suggestTriage
@@ -147,7 +152,6 @@ permissions:
     - read:confluence-content.summary
 
 app:
-  # Replaced by `forge register` (see README).
-  id: ari:cloud:ecosystem::app/00000000-0000-0000-0000-000000000000
+  id: ari:cloud:ecosystem::app/e5a318a1-4afc-4307-9179-bd11f7f6ce83
   runtime:
     name: nodejs24.x
