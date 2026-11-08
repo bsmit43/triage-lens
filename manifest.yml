@@ -1,0 +1,153 @@
+modules:
+  rovo:agent:
+    - key: triage-lens-agent
+      name: Triage Lens
+      description: Triages IT service desk tickets using similar resolved tickets and Confluence runbooks, then applies the priority, owner and category you approve.
+      prompt: resource:agent-prompt;prompt.txt
+      conversationStarters:
+        - Triage this ticket
+        - Who usually fixes tickets like this?
+        - Find a runbook for this issue
+      followUpPrompt: Would you like me to apply this triage to the ticket?
+      actions:
+        - suggest-triage
+        - apply-triage
+        - get-ticket-context
+        - find-similar-tickets
+        - find-runbooks
+
+  rovo:mcp:
+    - key: triage-lens-mcp
+      name: Triage Lens
+      tools:
+        - suggest-triage
+        - apply-triage
+        - get-ticket-context
+        - find-similar-tickets
+        - find-runbooks
+
+  action:
+    - key: suggest-triage
+      name: Suggest triage
+      function: suggestTriage
+      actionVerb: GET
+      description: |
+        Analyse a Jira Service Management ticket and suggest a priority (with reasons), a category,
+        and an owner based on who resolved similar tickets. Also returns similar resolved tickets and
+        matching Confluence runbooks. Read-only; changes nothing.
+      inputs:
+        issueKey:
+          title: Issue key
+          type: string
+          required: false
+          description: The Jira issue key, for example IT-123. Optional if the agent is opened on an issue.
+
+    - key: apply-triage
+      name: Apply triage
+      function: applyTriage
+      actionVerb: UPDATE
+      description: |
+        Apply a triage decision the user has explicitly confirmed: set the priority, optionally assign
+        an owner, add triage labels, and post an internal note explaining the decision.
+        Only call after the user confirms.
+      inputs:
+        issueKey:
+          title: Issue key
+          type: string
+          required: true
+          description: The Jira issue key, for example IT-123.
+        priority:
+          title: Priority
+          type: string
+          required: true
+          description: One of Highest, High, Medium, Low, Lowest.
+        assigneeAccountId:
+          title: Assignee account ID
+          type: string
+          required: false
+          description: Atlassian accountId of the confirmed owner, from suggest-triage.
+        category:
+          title: Category
+          type: string
+          required: false
+          description: Category to label the ticket with, for example Network or Access.
+        note:
+          title: Note
+          type: string
+          required: false
+          description: Short explanation of the triage decision to post as a comment.
+
+    - key: get-ticket-context
+      name: Get ticket context
+      function: getTicketContext
+      actionVerb: GET
+      description: |
+        Return a Jira ticket's summary, description, priority, status, assignee, reporter and labels.
+      inputs:
+        issueKey:
+          title: Issue key
+          type: string
+          required: false
+          description: The Jira issue key, for example IT-123. Optional if the agent is opened on an issue.
+
+    - key: find-similar-tickets
+      name: Find similar tickets
+      function: findSimilarTickets
+      actionVerb: GET
+      description: |
+        Find already-resolved tickets in the same project that share keywords with this ticket,
+        including who resolved them and the resolution.
+      inputs:
+        issueKey:
+          title: Issue key
+          type: string
+          required: false
+          description: The Jira issue key, for example IT-123.
+        maxResults:
+          title: Max results
+          type: integer
+          required: false
+          description: How many similar tickets to return (1-20, default 5).
+
+    - key: find-runbooks
+      name: Find runbooks
+      function: findRunbooks
+      actionVerb: GET
+      description: |
+        Search Confluence for runbooks or knowledge-base pages that match a description of a problem.
+      inputs:
+        query:
+          title: Query
+          type: string
+          required: true
+          description: A short description of the problem, for example "vpn disconnects on wifi".
+
+  function:
+    - key: suggestTriage
+      handler: index.suggestTriage
+    - key: applyTriage
+      handler: index.applyTriage
+    - key: getTicketContext
+      handler: index.getTicketContext
+    - key: findSimilarTickets
+      handler: index.findSimilarTickets
+    - key: findRunbooks
+      handler: index.findRunbooks
+
+resources:
+  - key: agent-prompt
+    path: resource/agent
+
+permissions:
+  scopes:
+    - read:jira-work
+    - write:jira-work
+    - read:jira-user
+    - search:confluence
+    - read:confluence-content.summary
+
+app:
+  # Replaced by `forge register` (see README).
+  id: ari:cloud:ecosystem::app/00000000-0000-0000-0000-000000000000
+  runtime:
+    name: nodejs24.x
